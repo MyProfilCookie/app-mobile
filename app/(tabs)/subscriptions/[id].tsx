@@ -3,10 +3,10 @@ import React from 'react'
 import { Text, View } from 'react-native'
 
 const SubscriptionDetail = () => {
-    const { id } = useLocalSearchParams()
+    const { id } = useLocalSearchParams<{ id: string }>()
   return (
     <View>
-      <Text>SubscriptionDetail: {id}</Text>
+      <Text>SubscriptionDetails: {id}</Text>
       <Link href="/">Retour</Link>
     </View>
   )

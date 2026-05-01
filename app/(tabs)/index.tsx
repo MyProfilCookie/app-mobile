@@ -12,7 +12,7 @@ export default function App() {
       <Link href="/(auth)/sign-in" className="mt-4 rounded bg-primary p-4 text-white">Se connecter</Link>
       <Link href="/(auth)/sign-up" className="mt-4 rounded bg-primary p-4 text-white">Créer un compte</Link>
       <Link href="/(tabs)/subscriptions" className="mt-4 rounded bg-primary p-4 text-white">Voir les abonnements</Link>
-      <Link href="/(tabs)/subscriptions/1" className="mt-4 rounded bg-primary p-4 text-white">Voir un abonnement</Link>
+      {/* <Link href="/(tabs)/subscriptions/1" className="mt-4 rounded bg-primary p-4 text-white">Voir un abonnement</Link> */}
       
     </View>
   );
