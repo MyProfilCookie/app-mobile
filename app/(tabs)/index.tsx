@@ -1,3 +1,4 @@
+// Test CodeRabbit
 import "@/global.css";
 import { Link } from "expo-router";
 import { styled } from "nativewind";
