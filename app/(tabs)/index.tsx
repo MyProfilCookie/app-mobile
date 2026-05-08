@@ -1,19 +1,28 @@
 
-import { Link } from "expo-router";
 import { styled } from "nativewind";
-import { Text } from "react-native";
+import { Image, Text, View } from "react-native";
+
+import { HOME_BALANCE, HOME_USER } from "@/constants/data";
+import { icons } from "@/constants/icons";
+import images from "@/constants/images";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 const SafeAreaView = styled(RNSafeAreaView)
  
 export default function App() {
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
-      <Text className="text-7xl font-sans-extrabold">
-        Accueil
-      </Text>
-      <Link href="/onboarding" className="mt-4 font-sans-bold rounded bg-primary p-4 text-white">Aller sur le Dashboard</Link>
-      <Link href="/(auth)/sign-in" className="mt-4 font-sans-bold rounded bg-primary p-4 text-white">Se connecter</Link>
-      <Link href="/(auth)/sign-up" className="mt-4 font-sans-bold rounded bg-primary p-4 text-white">Créer un compte</Link>
+      <View className="home-header">
+       <View className="home-user">
+        <Image source={images.avatar} alt="Avatar" className="home-avatar" />
+        <Text className="home-user-name">{HOME_USER.name}</Text>
+       </View>
+       <Image source={icons.add} className="home-add-icon" />
+      </View>
+
+      <View className="home-balance-card">
+       <Text className="home-balance-label">Total Depenses</Text>
+       <Text className="home-balance-next-renewal-date">{HOME_BALANCE.nextRenewalDate}</Text>
+      </View>
       
     </SafeAreaView>
   );
