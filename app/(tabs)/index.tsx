@@ -2,10 +2,17 @@
 import { styled } from "nativewind";
 import { Image, Text, View } from "react-native";
 
-import { HOME_BALANCE, HOME_USER } from "@/constants/data";
+
+import ListHeading from "@/components/ListHeading";
+import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
+import { HOME_BALANCE, HOME_USER, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
 import { icons } from "@/constants/icons";
 import images from "@/constants/images";
+import { formatCurrency } from "@/lib/utils";
+import dayjs from "dayjs";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+
+
 const SafeAreaView = styled(RNSafeAreaView)
  
 export default function App() {
@@ -21,8 +28,28 @@ export default function App() {
 
       <View className="home-balance-card">
        <Text className="home-balance-label">Total Depenses</Text>
-       <Text className="home-balance-next-renewal-date">{HOME_BALANCE.nextRenewalDate}</Text>
+
+       <View className="home-balance-row">
+         <Text className="home-balance-amount">
+            {formatCurrency(HOME_BALANCE.amount)}
+          </Text>
+          <Text className="home-balance-date">
+           {dayjs(HOME_BALANCE.nextRenewalDate).format('DD MMM')}
+          </Text>
+       </View>
       </View>
+
+      <View className="">
+        <ListHeading title="Dernieres depenses" />
+         {UPCOMING_SUBSCRIPTIONS.map((subscription) => (
+          <UpcomingSubscriptionCard  key={subscription.id} data={subscription} />
+        ))}
+      </View>
+
+       <View className="">
+        <ListHeading title="Prochains renouvellements" />
+      </View>
+
       
     </SafeAreaView>
   );
