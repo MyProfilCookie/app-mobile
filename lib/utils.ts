@@ -9,7 +9,7 @@ export const formatCurrency = (
       throw new Error("Invalid number");
     }
 
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("fr-FR", {
       style: "currency",
       currency: currency,
       minimumFractionDigits: 2,

@@ -1,11 +1,12 @@
 
 import { styled } from "nativewind";
-import { Image, Text, View } from "react-native";
+import { FlatList, Image, Text, View } from "react-native";
 
 
 import ListHeading from "@/components/ListHeading";
+import SubscriptionCard from "@/components/SubscriptionCard";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
-import { HOME_BALANCE, HOME_USER, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
+import { HOME_BALANCE, HOME_SUBSCRIPTIONS, HOME_USER, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
 import { icons } from "@/constants/icons";
 import images from "@/constants/images";
 import { formatCurrency } from "@/lib/utils";
@@ -41,13 +42,24 @@ export default function App() {
 
       <View className="">
         <ListHeading title="Dernieres depenses" />
-         {UPCOMING_SUBSCRIPTIONS.map((subscription) => (
-          <UpcomingSubscriptionCard  key={subscription.id} data={subscription} />
-        ))}
+         <FlatList 
+            data={UPCOMING_SUBSCRIPTIONS}
+            keyExtractor={(item) => item.id}
+            renderItem={({item}) => (
+              <UpcomingSubscriptionCard {...item} />
+            )}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            ListEmptyComponent={() => (
+              <Text className="home-empty-state">Aucune depense</Text>
+            )}
+            contentContainerClassName="gap-4"
+         />
       </View>
 
        <View className="">
         <ListHeading title="Prochains renouvellements" />
+        <SubscriptionCard {...HOME_SUBSCRIPTIONS[0]} />  
       </View>
 
       
