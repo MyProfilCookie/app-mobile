@@ -1,5 +1,6 @@
 
 import { styled } from "nativewind";
+import { useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 
 
@@ -17,8 +18,11 @@ import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 const SafeAreaView = styled(RNSafeAreaView)
  
 export default function App() {
+  const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null)
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
+      <View className="">
+        <ListHeading title="Les dépenses à venir" />
       <View className="home-header">
        <View className="home-user">
         <Image source={images.avatar} alt="Avatar" className="home-avatar" />
@@ -39,9 +43,6 @@ export default function App() {
           </Text>
        </View>
       </View>
-
-      <View className="">
-        <ListHeading title="Dernieres depenses" />
          <FlatList 
             data={UPCOMING_SUBSCRIPTIONS}
             keyExtractor={(item) => item.id}
@@ -57,9 +58,36 @@ export default function App() {
          />
       </View>
 
-       <View className="">
-        <ListHeading title="Prochains renouvellements" />
-        <SubscriptionCard {...HOME_SUBSCRIPTIONS[0]} />  
+       <View className="flex-1">
+          <ListHeading title="Prochains renouvellements" />
+
+          <FlatList 
+          ListHeaderComponent={({style}) => (
+            <View className="h-4" />
+          )}
+            data={HOME_SUBSCRIPTIONS}
+            keyExtractor={(item) => item.id}
+            renderItem={({item}) => (
+            <SubscriptionCard {...item} 
+            expanded={expandedSubscriptionId === item.id}
+          onPress={() => setExpandedSubscriptionId((currentId) => currentId === 
+            item.id 
+            ? null 
+          : item.id
+        )  
+      }  
+        />
+        )   
+        }
+        extraData={ expandedSubscriptionId}
+        ItemSeparatorComponent={() => <View className="h-4" />}
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="pb-20"
+        ListEmptyComponent={() => (
+          <Text className="home-empty-state">Aucun abonnement</Text>
+        )}
+      />
+      
       </View>
 
       
