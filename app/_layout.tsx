@@ -1,32 +1,54 @@
 import "@/global.css";
+import { ClerkProvider } from "@clerk/expo";
 import { useFonts } from "expo-font";
-import { Stack, SplashScreen } from "expo-router";
+import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+import LoadingScreen from "@/components/LoadingScreen";
+import { tokenCache } from "@/lib/cache";
+
 SplashScreen.preventAutoHideAsync();
 
+function getPublishableKey(): string {
+  const key = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!key) {
+    throw new Error(
+      "Ajoutez EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY dans votre fichier .env"
+    );
+  }
+  return key;
+}
+
 export default function RootLayout() {
-    const [fontsLoaded] = useFonts({
-   'sans-regular': require("../assets/fonts/PlusJakartaSans-Regular.ttf"),
-   'sans-semibold': require("../assets/fonts/PlusJakartaSans-SemiBold.ttf"),
-   'sans-bold': require("../assets/fonts/PlusJakartaSans-Bold.ttf"),
-   'sans-extrabold': require("../assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
-   'sans-light': require("../assets/fonts/PlusJakartaSans-Light.ttf"),
-   'sans-medium': require("../assets/fonts/PlusJakartaSans-Medium.ttf"),
+  const [fontsLoaded, fontError] = useFonts({
+    "sans-regular": require("../assets/fonts/PlusJakartaSans-Regular.ttf"),
+    "sans-semibold": require("../assets/fonts/PlusJakartaSans-SemiBold.ttf"),
+    "sans-bold": require("../assets/fonts/PlusJakartaSans-Bold.ttf"),
+    "sans-extrabold": require("../assets/fonts/PlusJakartaSans-ExtraBold.ttf"),
+    "sans-light": require("../assets/fonts/PlusJakartaSans-Light.ttf"),
+    "sans-medium": require("../assets/fonts/PlusJakartaSans-Medium.ttf"),
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
-  if (!fontsLoaded) {
-    return null;
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return (
+      <SafeAreaProvider>
+        <LoadingScreen />
+      </SafeAreaProvider>
+    );
   }
 
-  return <Stack screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="(auth)" />
-    <Stack.Screen name="(tabs)" />
-  </Stack>;
+  return (
+    <SafeAreaProvider>
+      <ClerkProvider publishableKey={getPublishableKey()} tokenCache={tokenCache}>
+        <Stack screenOptions={{ headerShown: false }} />
+      </ClerkProvider>
+    </SafeAreaProvider>
+  );
 }

@@ -51,7 +51,15 @@
             "./assets/fonts/PlusJakartaSans-Medium.ttf"
           ]
         }
-      ]
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choisissez votre photo de profil (ex. image enregistrée depuis LinkedIn)."
+        }
+      ],
+      "@clerk/expo"
     ],
     "experiments": {
       "typedRoutes": true,
