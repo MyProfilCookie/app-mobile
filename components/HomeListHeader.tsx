@@ -1,3 +1,4 @@
+import { useRouter, type Href } from "expo-router";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { FlatList } from "react-native";
 
@@ -27,6 +28,7 @@ type Props = {
 };
 
 export default function HomeListHeader({ user }: Props) {
+  const router = useRouter();
   const displayName = getClerkUserDisplayName(user);
 
   return (
@@ -38,7 +40,11 @@ export default function HomeListHeader({ user }: Props) {
             {displayName}
           </Text>
         </View>
-        <TouchableOpacity className="items-center justify-center rounded-full border border-black/10 bg-background p-3">
+        <TouchableOpacity
+          accessibilityLabel="Voir les abonnements"
+          className="items-center justify-center rounded-full border border-black/10 bg-background p-3"
+          onPress={() => router.push("/(tabs)/subscriptions" as Href)}
+        >
           <Image source={icons.add} className="size-6" />
         </TouchableOpacity>
       </View>

@@ -58,23 +58,23 @@ export async function pickAndUploadProfileImage(
     };
   }
 
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ["images"],
-    allowsEditing: true,
-    aspect: [1, 1],
-    quality: 0.85,
-    base64: true,
-  });
-
-  if (result.canceled || !result.assets[0]?.base64) {
-    return { ok: false, message: "Aucune image sélectionnée." };
-  }
-
-  const asset = result.assets[0];
-  const mimeType = asset.mimeType ?? "image/jpeg";
-  const dataUrl = `data:${mimeType};base64,${asset.base64}`;
-
   try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+      base64: true,
+    });
+
+    if (result.canceled || !result.assets[0]?.base64) {
+      return { ok: false, message: "Aucune image sélectionnée." };
+    }
+
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? "image/jpeg";
+    const dataUrl = `data:${mimeType};base64,${asset.base64}`;
+
     await user.setProfileImage({ file: dataUrl });
     await user.reload();
     return { ok: true };

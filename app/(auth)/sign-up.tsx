@@ -19,6 +19,7 @@ export default function SignUp() {
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   if (!isLoaded) {
     return <LoadingScreen />;
@@ -45,22 +46,57 @@ export default function SignUp() {
       return;
     }
 
-    await signUp.verifications.sendEmailCode();
-  };
-
-  const handleVerify = async () => {
-    await signUp.verifications.verifyEmailCode({ code });
-    if (signUp.status === "complete") {
-      await signUp.finalize({
-        navigate: ({ session }) => {
-          if (session?.currentTask) return;
-          navigateAfterAuth();
-        },
-      });
+    const { error: sendError } = await signUp.verifications.sendEmailCode();
+    if (sendError) {
+      setApiError(getClerkErrorMessage(sendError));
     }
   };
 
-  if (signUp.status === "complete" || isSignedIn) {
+  const handleResendCode = async () => {
+    setApiError(null);
+    const { error } = await signUp.verifications.sendEmailCode();
+    if (error) {
+      setApiError(getClerkErrorMessage(error));
+    }
+  };
+
+  const handleVerify = async () => {
+    setApiError(null);
+
+    const { error: verifyError } = await signUp.verifications.verifyEmailCode({
+      code,
+    });
+    if (verifyError) {
+      setApiError(getClerkErrorMessage(verifyError));
+      return;
+    }
+
+    if (signUp.status !== "complete") {
+      setApiError("Code invalide ou expiré. Réessayez.");
+      return;
+    }
+
+    setIsFinalizing(true);
+    const { error: finalizeError } = await signUp.finalize({
+      navigate: ({ session }) => {
+        if (session?.currentTask) {
+          setApiError(
+            "Une action est requise sur votre compte Clerk avant de continuer."
+          );
+          setIsFinalizing(false);
+          return;
+        }
+        navigateAfterAuth();
+      },
+    });
+
+    if (finalizeError) {
+      setApiError(getClerkErrorMessage(finalizeError));
+      setIsFinalizing(false);
+    }
+  };
+
+  if (isSignedIn || (isFinalizing && !apiError)) {
     return <LoadingScreen />;
   }
 
@@ -76,6 +112,11 @@ export default function SignUp() {
           subtitle={`Code envoyé à ${emailAddress}`}
         />
         <View className="auth-form">
+          {apiError ? (
+            <Text className="mb-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
+              {apiError}
+            </Text>
+          ) : null}
           <Text className="auth-label">Code</Text>
           <TextInput
             className="auth-input"
@@ -90,7 +131,7 @@ export default function SignUp() {
           ) : null}
           <Pressable
             className="auth-button"
-            disabled={fetchStatus === "fetching"}
+            disabled={fetchStatus === "fetching" || !code}
             onPress={handleVerify}
           >
             <Text className="auth-button-text">
@@ -99,7 +140,10 @@ export default function SignUp() {
                 : "Vérifier l'e-mail"}
             </Text>
           </Pressable>
-          <Pressable onPress={() => signUp.verifications.sendEmailCode()}>
+          <Pressable
+            disabled={fetchStatus === "fetching"}
+            onPress={handleResendCode}
+          >
             <Text className="text-center font-sans-semibold text-accent">
               Renvoyer le code
             </Text>

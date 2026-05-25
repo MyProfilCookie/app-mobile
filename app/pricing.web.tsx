@@ -1,9 +1,10 @@
 import { useAuth } from "@clerk/expo";
+import { PricingTable } from "@clerk/expo/web";
 import { Redirect, type Href } from "expo-router";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function PricingPage() {
+export default function PricingPageWeb() {
   const { isSignedIn, isLoaded } = useAuth();
 
   if (!isLoaded) {
@@ -16,11 +17,12 @@ export default function PricingPage() {
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
-      <Text className="font-sans-bold text-xl text-foreground">Tarifs</Text>
-      <Text className="mt-2 font-sans-regular text-muted-foreground">
-        La table des prix Clerk est disponible sur la version web. Lancez{" "}
-        <Text className="font-sans-semibold">npx expo start --web</Text>.
+      <Text className="mb-4 font-sans-bold text-2xl text-foreground">
+        Choisissez un plan
       </Text>
+      <View className="flex-1">
+        <PricingTable />
+      </View>
     </SafeAreaView>
   );
 }

@@ -111,7 +111,7 @@ cp .env.example .env
 | `EXPO_PUBLIC_CLERK_PLAN_SLUG` | Non | Slug du plan Billing (ex. `pro`) |
 | `EXPO_PUBLIC_CLERK_PLAN_ID` | Non | ID du plan Clerk Billing |
 
-> Ne commitez **jamais** le fichier `.env` (secrets). Utilisez `.env.example` comme référence pour l’équipe.
+> Ne commitez **jamais** le fichier `.env` (secrets). Il est listé dans `.gitignore`. Utilisez `.env.example` comme référence pour l’équipe. Si `.env` a déjà été poussé sur GitHub, **régénérez la clé Clerk** dans le Dashboard.
 
 ### 2. Réglages dans le Dashboard Clerk
 

@@ -14,7 +14,6 @@
     "clerk:doctor": "clerk doctor"
   },
   "dependencies": {
-    "@clerk/cli-darwin-arm64": "^1.3.0",
     "@clerk/expo": "^3.2.16",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
