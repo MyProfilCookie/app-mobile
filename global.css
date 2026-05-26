@@ -125,28 +125,44 @@
         @apply text-lg font-sans-semibold text-primary;
     }
 
+    .sub-search {
+        @apply mt-4 flex-row items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3;
+    }
+
+    .sub-search-input {
+        @apply min-h-[22px] flex-1 font-sans-regular text-base text-foreground;
+    }
+
+    .sub-search-clear {
+        @apply px-1 py-0.5;
+    }
+
+    .sub-search-clear-text {
+        @apply font-sans-semibold text-sm text-accent;
+    }
+
     .upcoming-card {
-        @apply mr-4 w-44 rounded-2xl border border-black/10 bg-background p-4;
+        @apply w-[188px] rounded-2xl border border-black/10 bg-background p-3.5;
     }
 
     .upcoming-row {
-        @apply flex-row items-center gap-3;
+        @apply flex-row items-center gap-2.5;
     }
 
     .upcoming-icon {
-        @apply size-14;
+        @apply size-12 rounded-lg;
     }
 
     .upcoming-price {
-        @apply text-lg font-sans-bold text-primary;
+        @apply text-base font-sans-bold text-primary;
     }
 
     .upcoming-meta {
-        @apply text-sm font-sans-semibold text-muted-foreground;
+        @apply text-xs font-sans-semibold text-muted-foreground;
     }
 
     .upcoming-name {
-        @apply mt-2 text-lg font-sans-bold text-primary;
+        @apply mt-2 text-sm font-sans-bold leading-snug text-primary;
     }
 
     .sub-card {
@@ -358,15 +374,15 @@
     }
 
     .modal-overlay {
-        @apply flex-1 bg-black/50;
+        @apply flex-1 justify-end bg-black/50;
     }
 
     .modal-container {
-        @apply mt-auto max-h-[85%] rounded-t-3xl bg-background;
+        @apply w-full flex-col overflow-hidden rounded-t-3xl bg-background;
     }
 
     .modal-header {
-        @apply flex-row items-center justify-between border-b border-border px-5 py-4;
+        @apply flex-row items-center justify-between px-5 py-4;
     }
 
     .modal-title {
@@ -405,6 +421,14 @@
         @apply text-accent;
     }
 
+    .modal-submit-button {
+        @apply items-center rounded-2xl border border-accent bg-accent/10 py-4;
+    }
+
+    .modal-submit-button-text {
+        @apply text-base font-sans-extrabold text-primary;
+    }
+
     .category-scroll {
         @apply flex-row flex-wrap gap-2;
     }
@@ -423,5 +447,81 @@
 
     .category-chip-text-active {
         @apply text-accent;
+    }
+
+    .auth-branding {
+        @apply mb-8 items-center;
+    }
+
+    .auth-logo-row {
+        @apply mb-6 flex-row items-center gap-3;
+    }
+
+    .auth-logo-badge {
+        @apply size-12 items-center justify-center rounded-2xl bg-primary;
+    }
+
+    .auth-logo-letter {
+        @apply font-sans-bold text-2xl text-background;
+    }
+
+    .auth-logo-title {
+        @apply font-sans-bold text-xl text-foreground;
+    }
+
+    .auth-logo-subtitle {
+        @apply font-sans-medium text-xs tracking-widest text-muted-foreground;
+    }
+
+    .auth-heading {
+        @apply text-center font-sans-bold text-2xl text-foreground;
+    }
+
+    .auth-subheading {
+        @apply mt-2 text-center font-sans-regular text-base text-muted-foreground;
+    }
+
+    .auth-screen {
+        @apply flex-1 bg-background px-5;
+    }
+
+    .auth-form {
+        @apply gap-4;
+    }
+
+    .auth-label {
+        @apply font-sans-semibold text-sm text-foreground;
+    }
+
+    .auth-input {
+        @apply rounded-xl border border-border bg-card px-4 py-3 font-sans-regular text-base text-foreground;
+    }
+
+    .auth-input-error {
+        @apply border-destructive;
+    }
+
+    .auth-hint {
+        @apply text-xs text-muted-foreground;
+    }
+
+    .auth-error {
+        @apply text-xs text-destructive;
+    }
+
+    .auth-button {
+        @apply mt-2 items-center rounded-xl bg-primary px-4 py-3.5;
+    }
+
+    .auth-button-disabled {
+        @apply opacity-50;
+    }
+
+    .auth-button-text {
+        @apply font-sans-semibold text-base text-background;
+    }
+
+    .auth-link-row {
+        @apply mt-6 flex-row justify-center gap-1;
     }
 }

@@ -16,7 +16,9 @@ const UpcomingSubscriptionCard = ({ name, price, daysLeft, id, icon }: { name: s
                 </Text>
             </View>
         </View>
-        <Text className="upcoming-name" numberOfLines={1}>{name}</Text>
+        <Text className="upcoming-name" numberOfLines={2}>
+          {name}
+        </Text>
     </View>
   )
 }

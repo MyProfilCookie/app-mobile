@@ -1,85 +1,115 @@
+import { useUser } from "@clerk/expo";
 import { styled } from "nativewind";
-import { useState } from "react";
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
-
-import ListHeading from "@/components/ListHeading";
-import SubscriptionCard from "@/components/SubscriptionCard";
-import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
-import { HOME_BALANCE, HOME_SUBSCRIPTIONS, HOME_USER, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
-import { icons } from "@/constants/icons";
-import images from "@/constants/images";
-import { formatCurrency } from "@/lib/utils";
-import dayjs from "dayjs";
+import { useCallback, useRef, useState } from "react";
+import { usePostHog } from "posthog-react-native";
+import { FlatList, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
+import HomeListHeader from "@/components/HomeListHeader";
+import SubscriptionCard from "@/components/SubscriptionCard";
+import { useSubscriptionStore } from "@/stores/subscription-store";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
-  const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
+  const { user } = useUser();
+  const posthog = usePostHog();
+  const subscriptions = useSubscriptionStore((s) => s.subscriptions);
+  const addSubscription = useSubscriptionStore((s) => s.addSubscription);
+  const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
+    string | null
+  >(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [sheetTopY, setSheetTopY] = useState<number | null>(null);
+  const listRef = useRef<FlatList<Subscription>>(null);
+  const measureBalanceCardRef = useRef<(() => Promise<void>) | null>(null);
+
+  const openCreateModal = useCallback(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    requestAnimationFrame(() => {
+      void (async () => {
+        await measureBalanceCardRef.current?.();
+        setIsModalVisible(true);
+      })();
+    });
+  }, []);
+
+  const handleBalanceCardBottom = useCallback((bottomY: number) => {
+    setSheetTopY(bottomY);
+  }, []);
+
+  const handleRegisterMeasure = useCallback((measure: () => Promise<void>) => {
+    measureBalanceCardRef.current = measure;
+  }, []);
+
+  const renderHeader = useCallback(
+    () => (
+      <HomeListHeader
+        user={user}
+        onAddPress={openCreateModal}
+        onBalanceCardBottom={handleBalanceCardBottom}
+        onRegisterMeasure={handleRegisterMeasure}
+      />
+    ),
+    [
+      user?.id,
+      user?.imageUrl,
+      user?.hasImage,
+      user?.firstName,
+      user?.lastName,
+      openCreateModal,
+      handleBalanceCardBottom,
+      handleRegisterMeasure,
+    ]
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
-      <FlatList 
-        data={HOME_SUBSCRIPTIONS}
+      <FlatList
+        ref={listRef}
+        data={subscriptions}
         keyExtractor={(item) => item.id}
-        renderItem={({item}) => (
-          <SubscriptionCard 
-            {...item} 
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        renderItem={({ item }) => (
+          <SubscriptionCard
+            {...item}
             expanded={expandedSubscriptionId === item.id}
-            onPress={() => setExpandedSubscriptionId((currentId) => currentId === item.id ? null : item.id)}  
+            onPress={() => {
+              const isExpanding = expandedSubscriptionId !== item.id;
+              setExpandedSubscriptionId((currentId) =>
+                currentId === item.id ? null : item.id
+              );
+              posthog.capture(
+                isExpanding
+                  ? "subscription_card_expanded"
+                  : "subscription_card_collapsed",
+                { subscription_id: item.id, subscription_name: item.name }
+              );
+            }}
           />
         )}
-        extraData={expandedSubscriptionId}
-        ListHeaderComponent={() => (
-          <View>
-            <View className="home-header">
-              <View className="home-user">
-                <Image source={images.avatar} alt="Avatar" className="home-avatar" />
-                <Text className="home-user-name">{HOME_USER.name}</Text>
-              </View>
-              <TouchableOpacity className="items-center justify-center rounded-full border border-black/10 bg-background p-3">
-          <Image source={icons.add} className="size-6" />
-        </TouchableOpacity>
-            </View>
-
-            <View className="home-balance-card">
-              <Text className="home-balance-label">Total Depenses</Text>
-              <View className="home-balance-row">
-                <Text className="home-balance-amount">
-                  {formatCurrency(HOME_BALANCE.amount)}
-                </Text>
-                <Text className="home-balance-date">
-                  {dayjs(HOME_BALANCE.nextRenewalDate).format('DD MMM')}
-                </Text>
-              </View>
-            </View>
-
-            <ListHeading title="Les dépenses à venir" />
-            
-            <FlatList 
-              data={UPCOMING_SUBSCRIPTIONS}
-              keyExtractor={(item) => item.id}
-              renderItem={({item}) => (
-                <UpcomingSubscriptionCard {...item} />
-              )}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              ListEmptyComponent={() => (
-                <Text className="home-empty-state">Aucune depense</Text>
-              )}
-              contentContainerClassName="gap-4"
-            />
-
-            <ListHeading title="Prochains renouvellements" />
-            <View className="h-4" />
-          </View>
-        )}
+        extraData={[
+          expandedSubscriptionId,
+          subscriptions.length,
+          user?.imageUrl,
+          user?.hasImage,
+        ]}
+        ListHeaderComponent={renderHeader}
         ItemSeparatorComponent={() => <View className="h-4" />}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-30"
         ListEmptyComponent={() => (
           <Text className="home-empty-state">Aucun abonnement</Text>
         )}
+      />
+
+      <CreateSubscriptionModal
+        visible={isModalVisible}
+        sheetTopY={sheetTopY}
+        onClose={() => setIsModalVisible(false)}
+        onSubmit={addSubscription}
       />
     </SafeAreaView>
   );
