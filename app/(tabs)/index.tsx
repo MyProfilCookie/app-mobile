@@ -4,9 +4,10 @@ import { useCallback, useState } from "react";
 import { usePostHog } from "posthog-react-native";
 import { FlatList, Text, View } from "react-native";
 
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import HomeListHeader from "@/components/HomeListHeader";
 import SubscriptionCard from "@/components/SubscriptionCard";
-import { HOME_SUBSCRIPTIONS } from "@/constants/data";
+import { useSubscriptionStore } from "@/stores/subscription-store";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 const SafeAreaView = styled(RNSafeAreaView);
@@ -14,19 +15,32 @@ const SafeAreaView = styled(RNSafeAreaView);
 export default function App() {
   const { user } = useUser();
   const posthog = usePostHog();
+  const subscriptions = useSubscriptionStore((s) => s.subscriptions);
+  const addSubscription = useSubscriptionStore((s) => s.addSubscription);
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const renderHeader = useCallback(
-    () => <HomeListHeader user={user} />,
+    () => (
+      <HomeListHeader
+        user={user}
+        onAddPress={() => setCreateModalVisible(true)}
+      />
+    ),
     [user?.id, user?.imageUrl, user?.hasImage, user?.firstName, user?.lastName]
   );
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
+      <CreateSubscriptionModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onSubmit={addSubscription}
+      />
       <FlatList
-        data={HOME_SUBSCRIPTIONS}
+        data={subscriptions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <SubscriptionCard
@@ -46,7 +60,12 @@ export default function App() {
             }}
           />
         )}
-        extraData={[expandedSubscriptionId, user?.imageUrl, user?.hasImage]}
+        extraData={[
+          expandedSubscriptionId,
+          subscriptions.length,
+          user?.imageUrl,
+          user?.hasImage,
+        ]}
         ListHeaderComponent={renderHeader}
         ItemSeparatorComponent={() => <View className="h-4" />}
         showsVerticalScrollIndicator={false}

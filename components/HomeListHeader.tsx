@@ -1,14 +1,12 @@
-import { useRouter, type Href } from "expo-router";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-import { FlatList } from "react-native";
+import { useMemo } from "react";
+import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 
 import ListHeading from "@/components/ListHeading";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import UserAvatar from "@/components/UserAvatar";
-import {
-  HOME_BALANCE,
-  UPCOMING_SUBSCRIPTIONS,
-} from "@/constants/data";
+import { HOME_BALANCE } from "@/constants/data";
+import { subscriptionsToUpcoming } from "@/lib/subscription-create";
+import { useSubscriptionStore } from "@/stores/subscription-store";
 import { icons } from "@/constants/icons";
 import { getClerkUserDisplayName } from "@/lib/user-display";
 import type { ClerkUserWithImage } from "@/lib/profile-image";
@@ -25,10 +23,15 @@ type Props = {
       })
     | null
     | undefined;
+  onAddPress: () => void;
 };
 
-export default function HomeListHeader({ user }: Props) {
-  const router = useRouter();
+export default function HomeListHeader({ user, onAddPress }: Props) {
+  const subscriptions = useSubscriptionStore((s) => s.subscriptions);
+  const upcomingSubscriptions = useMemo(
+    () => subscriptionsToUpcoming(subscriptions),
+    [subscriptions]
+  );
   const displayName = getClerkUserDisplayName(user);
 
   return (
@@ -41,9 +44,9 @@ export default function HomeListHeader({ user }: Props) {
           </Text>
         </View>
         <TouchableOpacity
-          accessibilityLabel="Voir les abonnements"
+          accessibilityLabel="Ajouter un abonnement"
           className="items-center justify-center rounded-full border border-black/10 bg-background p-3"
-          onPress={() => router.push("/(tabs)/subscriptions" as Href)}
+          onPress={onAddPress}
         >
           <Image source={icons.add} className="size-6" />
         </TouchableOpacity>
@@ -64,7 +67,7 @@ export default function HomeListHeader({ user }: Props) {
       <ListHeading title="Les dépenses à venir" />
 
       <FlatList
-        data={UPCOMING_SUBSCRIPTIONS}
+        data={upcomingSubscriptions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <UpcomingSubscriptionCard {...item} />}
         horizontal
@@ -72,7 +75,7 @@ export default function HomeListHeader({ user }: Props) {
         ListEmptyComponent={() => (
           <Text className="home-empty-state">Aucune depense</Text>
         )}
-        contentContainerClassName="gap-4"
+        contentContainerClassName="gap-3 pr-1"
       />
 
       <ListHeading title="Prochains renouvellements" />
