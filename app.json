@@ -59,7 +59,8 @@
           "photosPermission": "Choisissez votre photo de profil (ex. image enregistrée depuis LinkedIn)."
         }
       ],
-      "@clerk/expo"
+      "@clerk/expo",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

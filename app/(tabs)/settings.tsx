@@ -1,5 +1,6 @@
 import { useClerk, useUser } from "@clerk/expo";
 import { styled } from "nativewind";
+import { usePostHog } from "posthog-react-native";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
@@ -28,6 +29,7 @@ function AccountRow({
 const Settings = () => {
   const { signOut } = useClerk();
   const { user } = useUser();
+  const posthog = usePostHog();
 
   const displayName = getClerkUserDisplayName(user);
   const email = user?.primaryEmailAddress?.emailAddress;
@@ -43,6 +45,8 @@ const Settings = () => {
 
   const handleSignOut = async () => {
     try {
+      posthog.capture("user_signed_out");
+      posthog.reset();
       await signOut();
     } catch (error) {
       console.error("Sign-out failed:", error);

@@ -1,6 +1,7 @@
 import { useUser } from "@clerk/expo";
 import { styled } from "nativewind";
 import { useCallback, useState } from "react";
+import { usePostHog } from "posthog-react-native";
 import { FlatList, Text, View } from "react-native";
 
 import HomeListHeader from "@/components/HomeListHeader";
@@ -12,6 +13,7 @@ const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
   const { user } = useUser();
+  const posthog = usePostHog();
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
@@ -30,11 +32,18 @@ export default function App() {
           <SubscriptionCard
             {...item}
             expanded={expandedSubscriptionId === item.id}
-            onPress={() =>
+            onPress={() => {
+              const isExpanding = expandedSubscriptionId !== item.id;
               setExpandedSubscriptionId((currentId) =>
                 currentId === item.id ? null : item.id
-              )
-            }
+              );
+              posthog.capture(
+                isExpanding
+                  ? "subscription_card_expanded"
+                  : "subscription_card_collapsed",
+                { subscription_id: item.id, subscription_name: item.name }
+              );
+            }}
           />
         )}
         extraData={[expandedSubscriptionId, user?.imageUrl, user?.hasImage]}

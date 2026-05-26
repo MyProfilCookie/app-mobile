@@ -1,5 +1,7 @@
 import { useAuth } from "@clerk/expo";
 import { styled } from "nativewind";
+import { useEffect } from "react";
+import { usePostHog } from "posthog-react-native";
 import { Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
@@ -9,8 +11,15 @@ const planSlug = process.env.EXPO_PUBLIC_CLERK_PLAN_SLUG ?? "pro";
 
 const Insights = () => {
   const { isLoaded, has } = useAuth();
+  const posthog = usePostHog();
   const hasPremium =
     isLoaded && typeof has === "function" ? has({ plan: planSlug }) : false;
+
+  useEffect(() => {
+    if (isLoaded && !hasPremium) {
+      posthog.capture("insights_premium_upsell_viewed", { plan: planSlug });
+    }
+  }, [isLoaded, hasPremium, posthog]);
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5">

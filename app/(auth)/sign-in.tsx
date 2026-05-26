@@ -1,6 +1,7 @@
 import { useAuth, useSignIn } from "@clerk/expo";
 import { Link, useRouter, type Href } from "expo-router";
 import { useEffect, useState } from "react";
+import { usePostHog } from "posthog-react-native";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import AuthBranding from "@/components/AuthBranding";
@@ -37,6 +38,7 @@ export default function SignIn() {
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
+  const posthog = usePostHog();
 
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
@@ -77,6 +79,12 @@ export default function SignIn() {
           );
           return;
         }
+        const userId = session?.user?.id;
+        const email = session?.user?.primaryEmailAddress?.emailAddress;
+        if (userId) {
+          posthog.identify(userId, { $set: { email } });
+        }
+        posthog.capture("user_signed_in", { email });
         router.replace(decorateUrl("/(tabs)") as Href);
       },
     });
@@ -128,7 +136,9 @@ export default function SignIn() {
       const { error } = await signIn.password({ emailAddress, password });
 
       if (error) {
-        setApiError(getClerkErrorMessage(error));
+        const message = getClerkErrorMessage(error);
+        setApiError(message);
+        posthog.capture("sign_in_failed", { error_message: message });
         return;
       }
 

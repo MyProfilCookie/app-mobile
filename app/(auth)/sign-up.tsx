@@ -1,6 +1,7 @@
 import { useAuth, useSignUp } from "@clerk/expo";
 import { Link, useRouter, type Href } from "expo-router";
 import { useState } from "react";
+import { usePostHog } from "posthog-react-native";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import AuthBranding from "@/components/AuthBranding";
@@ -12,6 +13,7 @@ export default function SignUp() {
   const { signUp, errors, fetchStatus } = useSignUp();
   const { isSignedIn, isLoaded } = useAuth();
   const router = useRouter();
+  const posthog = usePostHog();
 
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +44,9 @@ export default function SignUp() {
 
     const { error } = await signUp.password({ emailAddress, password });
     if (error) {
-      setApiError(getClerkErrorMessage(error));
+      const message = getClerkErrorMessage(error);
+      setApiError(message);
+      posthog.capture("sign_up_failed", { error_message: message });
       return;
     }
 
@@ -86,6 +90,15 @@ export default function SignUp() {
           setIsFinalizing(false);
           return;
         }
+        const userId = session?.user?.id;
+        const email = session?.user?.primaryEmailAddress?.emailAddress;
+        if (userId) {
+          posthog.identify(userId, {
+            $set: { email },
+            $set_once: { sign_up_date: new Date().toISOString() },
+          });
+        }
+        posthog.capture("user_signed_up", { email });
         navigateAfterAuth();
       },
     });
