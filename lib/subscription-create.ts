@@ -3,33 +3,6 @@ import type { ImageSourcePropType } from "react-native";
 
 import { icons, type IconKey } from "@/constants/icons";
 
-export type SubscriptionFrequency = "Mensuel" | "Annuel";
-
-export const SUBSCRIPTION_FREQUENCIES: SubscriptionFrequency[] = [
-  "Mensuel",
-  "Annuel",
-];
-
-export const SUBSCRIPTION_CATEGORIES = [
-  "Design",
-  "Outils dev",
-  "IA",
-  "Divertissement",
-  "Productivité",
-  "Autre",
-] as const;
-
-export type SubscriptionCategory = (typeof SUBSCRIPTION_CATEGORIES)[number];
-
-const CATEGORY_COLORS: Record<SubscriptionCategory, string> = {
-  Design: "#f5c542",
-  "Outils dev": "#e8def8",
-  IA: "#b8d4e3",
-  Divertissement: "#ffb4a2",
-  Productivité: "#b8e8d0",
-  Autre: "#d4d4d8",
-};
-
 /** Clé = nom normalisé (minuscules, sans espaces ni ponctuation). */
 const EXACT_NAME_ICON: Record<string, IconKey> = {
   spotify: "spotify",
@@ -66,7 +39,6 @@ const EXACT_NAME_ICON: Record<string, IconKey> = {
   medium: "medium",
 };
 
-/** Premier motif qui matche gagne (ordre = du plus spécifique au plus large). */
 const SUBSTRING_ICON: { pattern: RegExp; icon: IconKey }[] = [
   { pattern: /youtubepremium|youtube\s*\+|youtube\s*music/i, icon: "youtube" },
   { pattern: /youtube/i, icon: "youtube" },
@@ -89,24 +61,11 @@ const SUBSTRING_ICON: { pattern: RegExp; icon: IconKey }[] = [
   { pattern: /chatgpt|openai|\bgpt\b/i, icon: "openai" },
 ];
 
-function normalizeNameKey(name: string): string {
-  return name
+export function iconForSubscriptionName(name: string): ImageSourcePropType {
+  const compact = name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "");
-}
-
-function slugifyId(name: string): string {
-  const base = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-  return `${base || "subscription"}-${Date.now()}`;
-}
-
-export function iconForSubscriptionName(name: string): ImageSourcePropType {
-  const compact = normalizeNameKey(name);
   const exact = EXACT_NAME_ICON[compact];
   if (exact) return icons[exact];
 
@@ -115,35 +74,6 @@ export function iconForSubscriptionName(name: string): ImageSourcePropType {
   }
 
   return icons.plus;
-}
-
-export function buildSubscriptionFromForm(input: {
-  name: string;
-  price: number;
-  frequency: SubscriptionFrequency;
-  category: SubscriptionCategory;
-}): Subscription {
-  const now = dayjs();
-  const renewalDate =
-    input.frequency === "Annuel"
-      ? now.add(1, "year").toISOString()
-      : now.add(1, "month").toISOString();
-
-  return {
-    id: slugifyId(input.name),
-    icon: iconForSubscriptionName(input.name),
-    name: input.name.trim(),
-    plan: input.frequency === "Annuel" ? "Accès annuel" : "Forfait mensuel",
-    category: input.category,
-    paymentMethod: "À définir",
-    status: "active",
-    startDate: now.toISOString(),
-    price: input.price,
-    currency: "EUR",
-    billing: input.frequency,
-    renewalDate,
-    color: CATEGORY_COLORS[input.category],
-  };
 }
 
 export function subscriptionsToUpcoming(

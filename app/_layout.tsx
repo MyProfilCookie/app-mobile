@@ -10,7 +10,9 @@ import LoadingScreen from "@/components/LoadingScreen";
 import { tokenCache } from "@/lib/cache";
 import { posthog } from "@/lib/posthog";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => {
+  /* Expo Go / rechargement : pas de splash natif à ce stade */
+});
 
 function getPublishableKey(): string {
   const key = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -46,10 +48,15 @@ export default function RootLayout() {
     "sans-medium": require("../assets/fonts/PlusJakartaSans-Medium.ttf"),
   });
 
+  const splashHidden = useRef(false);
+
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
+    if (!fontsLoaded && !fontError) return;
+    if (splashHidden.current) return;
+    splashHidden.current = true;
+    void SplashScreen.hideAsync().catch(() => {
+      /* iOS / Fast Refresh : hide sans VC enregistré — ignorer */
+    });
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) {

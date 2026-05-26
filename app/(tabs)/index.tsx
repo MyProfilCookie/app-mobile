@@ -1,14 +1,14 @@
 import { useUser } from "@clerk/expo";
 import { styled } from "nativewind";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { usePostHog } from "posthog-react-native";
 import { FlatList, Text, View } from "react-native";
+import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import HomeListHeader from "@/components/HomeListHeader";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import { useSubscriptionStore } from "@/stores/subscription-store";
-import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
@@ -20,28 +20,58 @@ export default function App() {
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
-  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [sheetTopY, setSheetTopY] = useState<number | null>(null);
+  const listRef = useRef<FlatList<Subscription>>(null);
+  const measureBalanceCardRef = useRef<(() => Promise<void>) | null>(null);
+
+  const openCreateModal = useCallback(() => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    requestAnimationFrame(() => {
+      void (async () => {
+        await measureBalanceCardRef.current?.();
+        setIsModalVisible(true);
+      })();
+    });
+  }, []);
+
+  const handleBalanceCardBottom = useCallback((bottomY: number) => {
+    setSheetTopY(bottomY);
+  }, []);
+
+  const handleRegisterMeasure = useCallback((measure: () => Promise<void>) => {
+    measureBalanceCardRef.current = measure;
+  }, []);
 
   const renderHeader = useCallback(
     () => (
       <HomeListHeader
         user={user}
-        onAddPress={() => setCreateModalVisible(true)}
+        onAddPress={openCreateModal}
+        onBalanceCardBottom={handleBalanceCardBottom}
+        onRegisterMeasure={handleRegisterMeasure}
       />
     ),
-    [user?.id, user?.imageUrl, user?.hasImage, user?.firstName, user?.lastName]
+    [
+      user?.id,
+      user?.imageUrl,
+      user?.hasImage,
+      user?.firstName,
+      user?.lastName,
+      openCreateModal,
+      handleBalanceCardBottom,
+      handleRegisterMeasure,
+    ]
   );
 
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
-      <CreateSubscriptionModal
-        visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
-        onSubmit={addSubscription}
-      />
       <FlatList
+        ref={listRef}
         data={subscriptions}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         renderItem={({ item }) => (
           <SubscriptionCard
             {...item}
@@ -73,6 +103,13 @@ export default function App() {
         ListEmptyComponent={() => (
           <Text className="home-empty-state">Aucun abonnement</Text>
         )}
+      />
+
+      <CreateSubscriptionModal
+        visible={isModalVisible}
+        sheetTopY={sheetTopY}
+        onClose={() => setIsModalVisible(false)}
+        onSubmit={addSubscription}
       />
     </SafeAreaView>
   );

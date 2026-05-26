@@ -374,15 +374,15 @@
     }
 
     .modal-overlay {
-        @apply flex-1 bg-black/50;
+        @apply flex-1 justify-end bg-black/50;
     }
 
     .modal-container {
-        @apply mt-auto max-h-[85%] rounded-t-3xl bg-background;
+        @apply w-full flex-col overflow-hidden rounded-t-3xl bg-background;
     }
 
     .modal-header {
-        @apply flex-row items-center justify-between border-b border-border px-5 py-4;
+        @apply flex-row items-center justify-between px-5 py-4;
     }
 
     .modal-title {
@@ -419,6 +419,14 @@
 
     .picker-option-text-active {
         @apply text-accent;
+    }
+
+    .modal-submit-button {
+        @apply items-center rounded-2xl border border-accent bg-accent/10 py-4;
+    }
+
+    .modal-submit-button-text {
+        @apply text-base font-sans-extrabold text-primary;
     }
 
     .category-scroll {

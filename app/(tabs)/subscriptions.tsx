@@ -47,7 +47,7 @@ const Subscriptions = () => {
 
   const monthlyTotal = filteredSubscriptions
     .filter((s) => s.status === "active")
-    .filter((s) => s.billing === "Mensuel")
+    .filter((s) => s.billing === "Monthly" || s.billing === "Mensuel")
     .reduce((sum, s) => sum + s.price, 0);
 
   return (

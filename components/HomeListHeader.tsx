@@ -1,17 +1,17 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import dayjs from "dayjs";
 
 import ListHeading from "@/components/ListHeading";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
 import UserAvatar from "@/components/UserAvatar";
 import { HOME_BALANCE } from "@/constants/data";
-import { subscriptionsToUpcoming } from "@/lib/subscription-create";
-import { useSubscriptionStore } from "@/stores/subscription-store";
 import { icons } from "@/constants/icons";
-import { getClerkUserDisplayName } from "@/lib/user-display";
 import type { ClerkUserWithImage } from "@/lib/profile-image";
+import { subscriptionsToUpcoming } from "@/lib/subscription-create";
+import { getClerkUserDisplayName } from "@/lib/user-display";
 import { formatCurrency } from "@/lib/utils";
-import dayjs from "dayjs";
+import { useSubscriptionStore } from "@/stores/subscription-store";
 
 type Props = {
   user:
@@ -24,9 +24,34 @@ type Props = {
     | null
     | undefined;
   onAddPress: () => void;
+  onBalanceCardBottom?: (bottomY: number) => void;
+  onRegisterMeasure?: (measure: () => Promise<void>) => void;
 };
 
-export default function HomeListHeader({ user, onAddPress }: Props) {
+export default function HomeListHeader({
+  user,
+  onAddPress,
+  onBalanceCardBottom,
+  onRegisterMeasure,
+}: Props) {
+  const balanceCardRef = useRef<View>(null);
+
+  const measureBalanceCardBottom = useCallback(() => {
+    return new Promise<void>((resolve) => {
+      if (!balanceCardRef.current) {
+        resolve();
+        return;
+      }
+      balanceCardRef.current.measureInWindow((_x, y, _w, height) => {
+        onBalanceCardBottom?.(y + height);
+        resolve();
+      });
+    });
+  }, [onBalanceCardBottom]);
+
+  useEffect(() => {
+    onRegisterMeasure?.(measureBalanceCardBottom);
+  }, [onRegisterMeasure, measureBalanceCardBottom]);
   const subscriptions = useSubscriptionStore((s) => s.subscriptions);
   const upcomingSubscriptions = useMemo(
     () => subscriptionsToUpcoming(subscriptions),
@@ -52,7 +77,11 @@ export default function HomeListHeader({ user, onAddPress }: Props) {
         </TouchableOpacity>
       </View>
 
-      <View className="home-balance-card">
+      <View
+        ref={balanceCardRef}
+        className="home-balance-card"
+        onLayout={measureBalanceCardBottom}
+      >
         <Text className="home-balance-label">Total Depenses</Text>
         <View className="home-balance-row">
           <Text className="home-balance-amount">
@@ -71,7 +100,9 @@ export default function HomeListHeader({ user, onAddPress }: Props) {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <UpcomingSubscriptionCard {...item} />}
         horizontal
+        nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
+        scrollEnabled={upcomingSubscriptions.length > 0}
         ListEmptyComponent={() => (
           <Text className="home-empty-state">Aucune depense</Text>
         )}

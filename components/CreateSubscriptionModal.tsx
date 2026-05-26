@@ -1,7 +1,9 @@
 import clsx from "clsx";
+import dayjs from "dayjs";
 import { usePostHog } from "posthog-react-native";
 import { useState } from "react";
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -9,203 +11,277 @@ import {
   ScrollView,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  buildSubscriptionFromForm,
-  SUBSCRIPTION_CATEGORIES,
-  SUBSCRIPTION_FREQUENCIES,
-  type SubscriptionCategory,
-  type SubscriptionFrequency,
-} from "@/lib/subscription-create";
+import { getCreateSubscriptionSheetHeight } from "@/lib/create-subscription-sheet";
+import { iconForSubscriptionName } from "@/lib/subscription-create";
 
 type Props = {
   visible: boolean;
+  /** Bas de la carte orange (coordonnée fenêtre) — le panneau commence ici. */
+  sheetTopY?: number | null;
   onClose: () => void;
   onSubmit: (subscription: Subscription) => void;
 };
 
-const INITIAL_CATEGORY: SubscriptionCategory = "Divertissement";
-const INITIAL_FREQUENCY: SubscriptionFrequency = "Mensuel";
+type Frequency = "Mensuel" | "Annuel";
+type Category =
+  | "Divertissement"
+  | "Outils IA"
+  | "Outils dev"
+  | "Design"
+  | "Productivité"
+  | "Autre";
+
+const CATEGORIES: Category[] = [
+  "Divertissement",
+  "Outils IA",
+  "Outils dev",
+  "Design",
+  "Productivité",
+  "Autre",
+];
+
+const CATEGORY_COLORS: Record<Category, string> = {
+  Divertissement: "#ff6b6b",
+  "Outils IA": "#b8d4e3",
+  "Outils dev": "#e8def8",
+  Design: "#f5c542",
+  Productivité: "#95e1d3",
+  Autre: "#d4d4d4",
+};
+
+function isValidPrice(price: string): boolean {
+  const trimmedPrice = price.trim().replace(",", ".");
+  if (!trimmedPrice) return false;
+  if (!/^\s*[+-]?(\d+(\.\d+)?|\.\d+)\s*$/.test(trimmedPrice)) return false;
+  const numValue = Number(trimmedPrice);
+  return Number.isFinite(numValue) && numValue > 0;
+}
 
 export default function CreateSubscriptionModal({
   visible,
+  sheetTopY,
   onClose,
   onSubmit,
 }: Props) {
   const posthog = usePostHog();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const fallbackTop =
+    windowHeight -
+    getCreateSubscriptionSheetHeight(windowHeight, insets.top);
+  const sheetTop = sheetTopY ?? fallbackTop;
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [frequency, setFrequency] =
-    useState<SubscriptionFrequency>(INITIAL_FREQUENCY);
-  const [category, setCategory] =
-    useState<SubscriptionCategory>(INITIAL_CATEGORY);
+  const [frequency, setFrequency] = useState<Frequency>("Mensuel");
+  const [category, setCategory] = useState<Category>("Autre");
+
+  const isValidForm = name.trim() !== "" && isValidPrice(price);
 
   const resetForm = () => {
     setName("");
     setPrice("");
-    setFrequency(INITIAL_FREQUENCY);
-    setCategory(INITIAL_CATEGORY);
+    setFrequency("Mensuel");
+    setCategory("Autre");
   };
 
+  const dismissKeyboard = () => Keyboard.dismiss();
+
   const handleClose = () => {
+    dismissKeyboard();
     resetForm();
     onClose();
   };
 
   const handleSubmit = () => {
-    const trimmedName = name.trim();
-    const parsedPrice = Number.parseFloat(price.replace(",", "."));
-    if (!trimmedName || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
-      return;
-    }
+    if (!isValidForm) return;
+    dismissKeyboard();
 
-    const subscription = buildSubscriptionFromForm({
+    const trimmedName = name.trim();
+    const priceValue = Number(price.trim().replace(",", "."));
+    const now = dayjs();
+    const renewalDate =
+      frequency === "Mensuel" ? now.add(1, "month") : now.add(1, "year");
+
+    const newSubscription: Subscription = {
+      id: `sub-${Date.now()}`,
       name: trimmedName,
-      price: parsedPrice,
-      frequency,
+      price: priceValue,
+      currency: "EUR",
+      billing: frequency,
       category,
-    });
+      status: "active",
+      startDate: now.toISOString(),
+      renewalDate: renewalDate.toISOString(),
+      icon: iconForSubscriptionName(trimmedName),
+      color: CATEGORY_COLORS[category],
+      plan: frequency === "Annuel" ? "Accès annuel" : "Forfait mensuel",
+      paymentMethod: "À définir",
+    };
+
+    onSubmit(newSubscription);
 
     posthog.capture("subscription_created", {
-      subscription_name: subscription.name,
-      subscription_price: subscription.price,
+      subscription_name: trimmedName,
+      subscription_price: priceValue,
       subscription_frequency: frequency,
       subscription_category: category,
     });
 
-    onSubmit(subscription);
     resetForm();
     onClose();
   };
 
-  const canSubmit =
-    name.trim().length > 0 &&
-    price.trim().length > 0 &&
-    Number.parseFloat(price.replace(",", ".")) > 0;
-
   return (
     <Modal
       visible={visible}
-      animationType="slide"
       transparent
+      animationType="slide"
       onRequestClose={handleClose}
     >
-      <Pressable className="modal-overlay" onPress={handleClose}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          className="flex-1 justify-end"
-        >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+        keyboardVerticalOffset={0}
+      >
+        <Pressable className="modal-overlay" onPress={handleClose}>
           <Pressable
             className="modal-container"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: sheetTop,
+              bottom: 0,
+            }}
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="modal-header">
+            <Pressable className="modal-header" onPress={dismissKeyboard}>
               <Text className="modal-title">Nouvel abonnement</Text>
-              <Pressable
-                className="modal-close"
-                onPress={handleClose}
-                accessibilityLabel="Fermer"
-              >
-                <Text className="modal-close-text">×</Text>
+              <Pressable className="modal-close" onPress={handleClose}>
+                <Text className="modal-close-text">✕</Text>
               </Pressable>
-            </View>
+            </Pressable>
 
             <ScrollView
               keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
+              bounces={false}
             >
-              <View className="modal-body">
-                <View className="auth-field">
-                  <Text className="auth-label">Nom</Text>
-                  <TextInput
-                    className="auth-input"
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Spotify, Netflix…"
-                    placeholderTextColor="rgba(0,0,0,0.35)"
-                    autoCapitalize="words"
-                  />
-                </View>
-
-                <View className="auth-field">
-                  <Text className="auth-label">Prix</Text>
-                  <TextInput
-                    className="auth-input"
-                    value={price}
-                    onChangeText={setPrice}
-                    placeholder="9,99"
-                    placeholderTextColor="rgba(0,0,0,0.35)"
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-
-                <View className="auth-field">
-                  <Text className="auth-label">Fréquence</Text>
-                  <View className="picker-row">
-                    {SUBSCRIPTION_FREQUENCIES.map((option) => (
-                      <Pressable
-                        key={option}
-                        className={clsx(
-                          "picker-option",
-                          frequency === option && "picker-option-active"
-                        )}
-                        onPress={() => setFrequency(option)}
-                      >
-                        <Text
-                          className={clsx(
-                            "picker-option-text",
-                            frequency === option && "picker-option-text-active"
-                          )}
-                        >
-                          {option}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                <View className="auth-field">
-                  <Text className="auth-label">Catégorie</Text>
-                  <View className="category-scroll">
-                    {SUBSCRIPTION_CATEGORIES.map((option) => (
-                      <Pressable
-                        key={option}
-                        className={clsx(
-                          "category-chip",
-                          category === option && "category-chip-active"
-                        )}
-                        onPress={() => setCategory(option)}
-                      >
-                        <Text
-                          className={clsx(
-                            "category-chip-text",
-                            category === option && "category-chip-text-active"
-                          )}
-                        >
-                          {option}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
-
-                <Pressable
-                  className={clsx(
-                    "auth-button",
-                    !canSubmit && "auth-button-disabled"
-                  )}
-                  onPress={handleSubmit}
-                  disabled={!canSubmit}
+              <TouchableWithoutFeedback
+                onPress={dismissKeyboard}
+                accessible={false}
+              >
+                <View
+                  style={{
+                    gap: 20,
+                    padding: 20,
+                    paddingBottom: Math.max(insets.bottom, 16) + 20,
+                  }}
                 >
-                  <Text className="auth-button-text">Créer l&apos;abonnement</Text>
-                </Pressable>
+              <View className="auth-field">
+                <Text className="auth-label">Nom</Text>
+                <TextInput
+                  className="auth-input"
+                  placeholder="Nom de l'abonnement"
+                  placeholderTextColor="rgba(0, 0, 0, 0.4)"
+                  value={name}
+                  onChangeText={setName}
+                />
               </View>
+
+              <View className="auth-field">
+                <Text className="auth-label">Prix</Text>
+                <TextInput
+                  className="auth-input"
+                  placeholder="0,00"
+                  placeholderTextColor="rgba(0, 0, 0, 0.4)"
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+
+              <View className="auth-field">
+                <Text className="auth-label">Fréquence</Text>
+                <View className="picker-row">
+                  {(["Mensuel", "Annuel"] as Frequency[]).map((f) => (
+                    <Pressable
+                      key={f}
+                      className={clsx(
+                        "picker-option",
+                        frequency === f && "picker-option-active"
+                      )}
+                      onPress={() => {
+                        dismissKeyboard();
+                        setFrequency(f);
+                      }}
+                    >
+                      <Text
+                        className={clsx(
+                          "picker-option-text",
+                          frequency === f && "picker-option-text-active"
+                        )}
+                      >
+                        {f}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View className="auth-field">
+                <Text className="auth-label">Catégorie</Text>
+                <View className="category-scroll">
+                  {CATEGORIES.map((cat) => (
+                    <Pressable
+                      key={cat}
+                      className={clsx(
+                        "category-chip",
+                        category === cat && "category-chip-active"
+                      )}
+                      onPress={() => {
+                        dismissKeyboard();
+                        setCategory(cat);
+                      }}
+                    >
+                      <Text
+                        className={clsx(
+                          "category-chip-text",
+                          category === cat && "category-chip-text-active"
+                        )}
+                      >
+                        {cat}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <Pressable
+                className="modal-submit-button"
+                accessibilityState={{ disabled: !isValidForm }}
+                onPress={handleSubmit}
+              >
+                <Text
+                  className="modal-submit-button-text"
+                  style={{ fontFamily: "sans-extrabold" }}
+                >
+                  Créer l'abonnement
+                </Text>
+              </Pressable>
+                </View>
+              </TouchableWithoutFeedback>
             </ScrollView>
           </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
